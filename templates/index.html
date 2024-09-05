@@ -57,9 +57,15 @@
             border-radius: 8px;
             font-size: 16px;
             background-color: #f9f9f9;
+            color: #5f6063;
             transition: border-color 0.3s ease, background-color 0.3s ease;
             resize: none;
             overflow-y: auto;
+        }
+
+        /* Placeholder text color */
+        textarea::placeholder {
+            color: #a8a8a8; /* Change this to any color you prefer */
         }
 
         textarea:focus {
@@ -88,7 +94,7 @@
         }
 
         .file-input-label {
-            color: #666;
+            color: #9a9a9a;
             font-size: 15px;
         }
 
@@ -226,7 +232,16 @@
             background-color: #f44336;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.0/purify.min.js"></script>
+
+    <script>
+        // Initialize marked
+        marked.use({
+            breaks: true,
+            gfm: true
+        });
+    </script>
 </head>
 
 <body>
@@ -333,28 +348,40 @@
 
             document.getElementById("loading").style.display = "block";
             document.getElementById("response").style.display = "none";
-            document.body.style.overflow = 'hidden'; // Disable scrolling during processing
+            document.body.style.overflow = 'hidden';
 
             fetch('/process', {
                 method: 'POST',
                 body: formData
             })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("loading").style.display = "none";
-                    document.getElementById("response").style.display = "block";
-                    let cleanHTML = DOMPurify.sanitize(marked(data.response));
-                    document.getElementById("response-content").innerHTML = cleanHTML;
-                     // Convert Markdown to HTML
-                    document.body.style.overflow = 'auto'; // Enable scrolling after processing
-                })
-                .catch(error => {
-                    document.getElementById("loading").style.display = "none";
-                    document.getElementById("response").style.display = "block";
-                    document.getElementById("response-content").textContent = "An error occurred while processing your request.";
-                    console.error('Error:', error);
-                    document.body.style.overflow = 'auto'; // Enable scrolling after error
-                });
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received data:', data);
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("response").style.display = "block";
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                // Use marked.parse() to convert Markdown to HTML
+                let markdownHTML = marked.parse(data.response);
+                // Then sanitize the HTML
+                let cleanHTML = DOMPurify.sanitize(markdownHTML);
+                document.getElementById("response-content").innerHTML = cleanHTML;
+                document.body.style.overflow = 'auto';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("response").style.display = "block";
+                document.getElementById("response-content").textContent = `An error occurred: ${error.message}`;
+                document.body.style.overflow = 'auto';
+            });
         }
 
         function showNotification(message, isError = false) {
@@ -366,6 +393,19 @@
                 setTimeout(() => notification.style.display = 'none', 300);
             }, 3000);
         }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            if (typeof marked === 'undefined') {
+                console.error('Marked library is not loaded');
+            } else {
+                console.log('Marked library is loaded');
+            }
+            if (typeof DOMPurify === 'undefined') {
+                console.error('DOMPurify library is not loaded');
+            } else {
+                console.log('DOMPurify library is loaded');
+            }
+        });
 
 
     </script>

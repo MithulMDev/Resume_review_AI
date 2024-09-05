@@ -41,11 +41,11 @@ def process_request():
     resume_file = request.files.get('resume')
 
     if not job_description or not resume_file:
-        return jsonify({'response': 'Please provide both a job description and a resume.'})
+        return jsonify({'error': 'Please provide both a job description and a resume.'}), 400
 
     resume_text = extract_text_from_pdf(resume_file)
     if not resume_text:
-        return jsonify({'response': 'Error extracting text from the resume.'})
+        return jsonify({'error': 'Error extracting text from the resume.'}), 400
 
     prompts = {
         'analyze': f"Analyze the resume and job description. Job: {job_description}. Resume: {resume_text}.",
@@ -53,10 +53,15 @@ def process_request():
         'match': f"Evaluate the percentage match between the job description and resume. Job: {job_description}. Resume: {resume_text}."
     }
 
-    prompt = prompts.get(action, 'Invalid action')
-    gemini_response = get_gemini_response(job_description, resume_text, prompt)
+    prompt = prompts.get(action)
+    if not prompt:
+        return jsonify({'error': 'Invalid action'}), 400
 
-    return jsonify({'response': gemini_response})
+    try:
+        gemini_response = get_gemini_response(job_description, resume_text, prompt)
+        return jsonify({'response': gemini_response})
+    except Exception as e:
+        return jsonify({'error': f"Error processing request: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
