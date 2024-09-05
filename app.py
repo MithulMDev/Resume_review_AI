@@ -1,105 +1,62 @@
+from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
+import os
+import google.generativeai as genai
+import fitz  # PyMuPDF
 
 load_dotenv()
 
-import streamlit as st
-import os
-from PIL import Image
-import pdf2image
-import google.generativeai as genai
-import io
-import base64
-
+app = Flask(__name__)
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-def get_gemini_response(input, pdf_content, prompt):
-    model = genai.GenerativeModel('gemini-pro-vision')
-    response = model.generate_content([input, pdf_content[0], prompt])
-    return response.text
+def extract_text_from_pdf(uploaded_file):
+    try:
+        pdf_document = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        text = ""
 
-def input_pdf_setup(uploaded_file):
+        for page_num in range(len(pdf_document)):
+            page = pdf_document.load_page(page_num)
+            text += page.get_text()
 
-    if uploaded_file is not None:
-        # Convert pdf to image
-        images = pdf2image.convert_from_bytes(uploaded_file.read())
+        return text
+    except Exception as e:
+        return str(e)
 
-        first_page = images[0]
+def get_gemini_response(input_text, pdf_content, prompt):
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content([input_text, pdf_content, prompt])
+        return response.text
+    except Exception as e:
+        return f"Error interacting with Gemini: {str(e)}"
 
-        # Convert to bytes
-        img_byte_arr = io.BytesIO()
-        first_page.save(img_byte_arr, format='JPEG')
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-        img_byte_arr = img_byte_arr.getvalue()
+@app.route('/process', methods=['POST'])
+def process_request():
+    action = request.form.get('action')
+    job_description = request.form.get('job_description')
+    resume_file = request.files.get('resume')
 
-        pdf_parts = [
-            {
-                "mime_type": "image/jpeg",
-                "data": base64.b64encode(img_byte_arr).decode()
-            }
-        ]
+    if not job_description or not resume_file:
+        return jsonify({'response': 'Please provide both a job description and a resume.'})
 
-        return pdf_parts
+    resume_text = extract_text_from_pdf(resume_file)
+    if not resume_text:
+        return jsonify({'response': 'Error extracting text from the resume.'})
 
-    else:
-        raise FileNotFoundError("No file found!!")
-    
+    prompts = {
+        'analyze': f"Analyze the resume and job description. Job: {job_description}. Resume: {resume_text}.",
+        'improve': f"Improve the resume to better match the job description. Job: {job_description}. Resume: {resume_text}.",
+        'match': f"Evaluate the percentage match between the job description and resume. Job: {job_description}. Resume: {resume_text}."
+    }
 
-st.set_page_config(page_title="ATS Resume review")
-st.header("ATS Tracking System")
-input_text = st.text_area("Job Description: ", key="input")
+    prompt = prompts.get(action, 'Invalid action')
+    gemini_response = get_gemini_response(job_description, resume_text, prompt)
 
-uploaded_file = st.file_uploader("Upload your resume (PDF)", type=["pdf"])
+    return jsonify({'response': gemini_response})
 
-if uploaded_file is not None:
-    st.write("PDF Successfully uploaded")
-
-submit1 = st.button("Tell me about the resume")
-
-submit2 = st.button("How can I improve my skill?")
-
-submit3 = st.button("Percentage match")
-
-input_1_prompt = """
-You are an experienced HR with data science, your task is to review the provided resume against the job description for the profile.
-Please share your professional experience on whether the candidate's profile aligns with the job description. highlight the strengths and weaknesses of the applicant in relation to this job description. 
-"""
-
-input_2_prompt = """
-You are an experienced HR with data science, your task is to review the provided resume against the job description for the profile.
-"""
-
-input_3_prompt = """
-You are a skilled ATS (applicant tracking system) scanner with a deep understanding of data science. your task is to evaluate the given resume 
-against the provided job description. give me the percentage match of the resume against the job description. First the output should come as a percentage and then keywords missing, and then detailed review. 
-"""
-
-
-if submit1:
-    if uploaded_file is not None:
-        pdf_content=input_pdf_setup(uploaded_file)
-        response = get_gemini_response(input_1_prompt, pdf_content, input_text)
-        st.subheader("The response is")
-        st.write(response)
-
-    else:
-        st.write("Please upload a resume in PDF format")
-
-elif submit2:
-    if uploaded_file is not None:
-        pdf_content=input_pdf_setup(uploaded_file)
-        response = get_gemini_response(input_2_prompt, pdf_content, input_text)
-        st.subheader("The response is")
-        st.write(response)
-
-    else:
-        st.write("Please upload a resume in PDF format")
-
-elif submit3:
-    if uploaded_file is not None:
-        pdf_content=input_pdf_setup(uploaded_file)
-        response = get_gemini_response(input_3_prompt, pdf_content, input_text)
-        st.subheader("The response is")
-        st.write(response)
-
-    else:
-        st.write("Please upload a resume in PDF format")
+if __name__ == '__main__':
+    app.run(debug=True)

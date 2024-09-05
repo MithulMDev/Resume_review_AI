@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Resume Review</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #6e8efb, #a777e3);
+            color: #333;
+        }
+
+        body {
+            overflow: auto; /* Ensure the body is scrollable */
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 700px;
+            margin-top: 70px;
+            margin-bottom: 20px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 25px;
+            color: #333;
+            font-weight: 600;
+            margin: 0;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        textarea {
+            width: calc(100% - 30px);
+            height: 150px;
+            padding: 15px;
+            margin-bottom: 30px;
+            margin-top: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #f9f9f9;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+            resize: none;
+            overflow-y: auto;
+        }
+
+        textarea:focus {
+            border-color: #6e8efb;
+            background-color: #e3e7ff;
+            outline: none;
+        }
+
+        .file-input {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+            width: calc(100% - 40px);
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            background-color: #f5f5f5;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .file-input:hover {
+            border-color: #6e8efb;
+            background-color: #e3e7ff;
+        }
+
+        .file-input-label {
+            color: #666;
+            font-size: 15px;
+        }
+
+        .file-input.dragover {
+            border-color: #6e8efb;
+            background-color: #e3e7ff;
+        }
+
+        button {
+            margin: 10px;
+            padding: 12px 24px;
+            background-color: #6e8efb;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            width: calc(33% - 20px);
+            font-weight: 600;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+        }
+
+        button:hover {
+            background-color: #4a5caa;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        #response {
+            margin-top: 20px;
+            text-align: left;
+            padding: 20px;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+            display: none;
+            word-wrap: break-word; /* Ensure long words are broken properly */
+        }
+
+        #response h2 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #444;
+        }
+
+        .loading {
+            display: none;
+            font-size: 16px;
+            color: #6e8efb;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            header h1 {
+                font-size: 28px;
+            }
+
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .button-container {
+                flex-direction: column;
+            }
+            
+
+            textarea, .file-input {
+                width: calc(100% - 15px);
+            }
+        }
+
+        .drag-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 123, 255, 0.3);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: #6e8efb;
+            font-size: 24px;
+            z-index: 10;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .drag-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4caf50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+            display: none;
+            z-index: 20;
+            transition: opacity 0.3s ease;
+        }
+
+        .notification.error {
+            background-color: #f44336;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.0/purify.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>ATS Resume Review System</h1>
+        </header>
+        <section>
+            <textarea id="job-description" placeholder="Enter the Job Description..."></textarea>
+            <div class="file-input" id="file-drop-area">
+                <span class="file-input-label">Drag & Drop your resume or click to upload</span>
+                <input type="file" id="resume-upload" accept=".pdf" aria-label="Upload your resume" style="display: none;">
+            </div>
+            <div class="button-container">
+                <button id="analyze-resume" onclick="analyzeResume()">Analyze</button>
+                <button id="improve-skill" onclick="improveSkill()">Improve</button>
+                <button id="percentage-match" onclick="percentageMatch()">Match</button>
+            </div>
+        </section>
+        <div class="loading" id="loading">Processing your request...</div>
+        <section id="response">
+            <h2>Response:</h2>
+            <div id="response-content"></div>
+        </section>
+    </div>
+
+    <div class="drag-overlay" id="drag-overlay">
+        Drop your resume here!
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        const fileDropArea = document.getElementById('file-drop-area');
+        const fileInput = document.getElementById('resume-upload');
+        const dragOverlay = document.getElementById('drag-overlay');
+        const notification = document.getElementById('notification');
+
+        fileDropArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', () => {
+            const fileName = fileInput.files[0] ? fileInput.files[0].name : "Drag & Drop your resume or click to upload";
+            document.querySelector('.file-input-label').textContent = fileName;
+        });
+
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dragOverlay.classList.add('active');
+        });
+
+        document.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragOverlay.classList.remove('active');
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragOverlay.classList.remove('active');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                const fileName = fileInput.files[0].name;
+                document.querySelector('.file-input-label').textContent = fileName;
+            }
+        });
+
+        function analyzeResume() {
+            processRequest('analyze');
+        }
+
+        function improveSkill() {
+            processRequest('improve');
+        }
+
+        function percentageMatch() {
+            processRequest('match');
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFileUpload(file);
+        });
+
+        function handleFileUpload(file) {
+            if (file && file.type === "application/pdf") {
+                fileNameDisplay.textContent = file.name; // Display file name
+                showNotification('Resume uploaded successfully!', 'success');
+
+            }
+        }
+
+        function processRequest(action) {
+            const jobDescription = document.getElementById('job-description').value;
+            const resumeFile = fileInput.files[0];
+
+            if (!jobDescription || !resumeFile) {
+                showNotification("Please provide both the job description and a resume.", true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('action', action);
+            formData.append('job_description', jobDescription);
+            formData.append('resume', resumeFile);
+
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("response").style.display = "none";
+            document.body.style.overflow = 'hidden'; // Disable scrolling during processing
+
+            fetch('/process', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("loading").style.display = "none";
+                    document.getElementById("response").style.display = "block";
+                    let cleanHTML = DOMPurify.sanitize(marked(data.response));
+                    document.getElementById("response-content").innerHTML = cleanHTML;
+                     // Convert Markdown to HTML
+                    document.body.style.overflow = 'auto'; // Enable scrolling after processing
+                })
+                .catch(error => {
+                    document.getElementById("loading").style.display = "none";
+                    document.getElementById("response").style.display = "block";
+                    document.getElementById("response-content").textContent = "An error occurred while processing your request.";
+                    console.error('Error:', error);
+                    document.body.style.overflow = 'auto'; // Enable scrolling after error
+                });
+        }
+
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.className = `notification ${isError ? 'error' : ''}`;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.style.display = 'none', 300);
+            }, 3000);
+        }
+
+
+    </script>
+</body>
+
+</html>
