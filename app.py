@@ -49,7 +49,7 @@ def process_request():
 
     prompts = {
         'analyze': f"Analyze the resume and job description. Job: {job_description}. Resume: {resume_text}.",
-        'improve': f"Improve the resume to better match the job description. Job: {job_description}. Resume: {resume_text}.",
+        'improve': f"Suggest improvments on the resume based on the given job description. Job: {job_description}. Resume: {resume_text}.",
         'match': f"Evaluate the percentage match between the job description and resume. Job: {job_description}. Resume: {resume_text}."
     }
 
