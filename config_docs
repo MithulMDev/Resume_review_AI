@@ -1,0 +1,6 @@
+Install Heroku CLI
+then create an app using Herok create
+then instigate requirements using pip freeze requirements.txt
+then git add, commit, finally push it to heroku master
+
+the URL will be shown in the bottom
