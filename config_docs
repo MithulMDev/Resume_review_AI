@@ -4,3 +4,17 @@ then instigate requirements using pip freeze requirements.txt
 then git add, commit, finally push it to heroku master
 
 the URL will be shown in the bottom
+
+steps:
+- heroku login
+- heroku create (not needed if already created)
+- git add and commit
+- git push to heroku master
+
+to verify:
+- say 
+  - heroku apps (this will give the url of the app created)
+- now to set
+  - heroku git:remote -a <app url shown in the result for the above query
+- verify using git remote -v
+- git push heroku master
